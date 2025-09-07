@@ -45,21 +45,21 @@ jobs:
           TIMETREE_EMAIL: ${{ secrets.TIMETREE_EMAIL }}
           TIMETREE_PASSWORD: ${{ secrets.TIMETREE_PASSWORD }}
           TIMETREE_CALENDAR_CODE: ${{ secrets.TIMETREE_CALENDAR_CODE }}
+          TIMETREE_CALENDAR_NUMBER: ${{ secrets.TIMETREE_CALENDAR_NUMBER }}
         run: |
           set -euo pipefail
-          # 本環境の timetree_exporter は --password 非対応のため、環境変数/標準入力で対応
+          # timetree_exporter はカレンダー選択を対話で求める場合があるため、
+          # まずコード指定で試行し、未生成なら番号選択（標準入力）でフォールバックします。
           # 1) CLI 名が存在する場合（timetree-exporter）
           if command -v timetree-exporter >/dev/null 2>&1; then
-            # 環境変数にパスワードを置いた状態で実行
             timetree-exporter \
               -e "$TIMETREE_EMAIL" \
               -c "$TIMETREE_CALENDAR_CODE" \
               -o calendar.ics || true
-            # 生成されない場合はパスワードを標準入力で供給して試行（対話プロンプト対策）
-            if [ ! -f calendar.ics ] && [ -n "${TIMETREE_PASSWORD:-}" ]; then
-              printf '%s\n' "$TIMETREE_PASSWORD" | timetree-exporter \
+            # 生成されない場合はカレンダー番号（1,2,...)を標準入力で供給して試行
+            if [ ! -f calendar.ics ] && [ -n "${TIMETREE_CALENDAR_NUMBER:-}" ]; then
+              printf '%s\n' "$TIMETREE_CALENDAR_NUMBER" | timetree-exporter \
                 -e "$TIMETREE_EMAIL" \
-                -c "$TIMETREE_CALENDAR_CODE" \
                 -o calendar.ics || true
             fi
           fi
@@ -70,10 +70,9 @@ jobs:
               -c "$TIMETREE_CALENDAR_CODE" \
               -o calendar.ics || true
           fi
-          if [ ! -f calendar.ics ] && [ -n "${TIMETREE_PASSWORD:-}" ]; then
-            printf '%s\n' "$TIMETREE_PASSWORD" | python -m timetree_exporter \
+          if [ ! -f calendar.ics ] && [ -n "${TIMETREE_CALENDAR_NUMBER:-}" ]; then
+            printf '%s\n' "$TIMETREE_CALENDAR_NUMBER" | python -m timetree_exporter \
               -e "$TIMETREE_EMAIL" \
-              -c "$TIMETREE_CALENDAR_CODE" \
               -o calendar.ics || true
           fi
           if [ ! -f calendar.ics ]; then

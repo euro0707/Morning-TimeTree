@@ -14,6 +14,8 @@
 - 通知方式（推奨: Messaging API）
   - 推奨: `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_USER_ID`（両方あれば自動的に Messaging API を使用）
   - 互換/非推奨: `LINE_TOKEN`（LINE Notify 個人トークン。サービス終了のため基本は使用しない）
+ - うまくエクスポートできない場合のフォールバック（任意）
+   - `TIMETREE_CALENDAR_NUMBER`: カレンダー選択番号（1, 2, ...）。`timetree_exporter` が対話選択を要求する場合に使用します。
 
 2) 内容確認（任意・ローカル）
 - Python 3.12+ を用意し、依存をインストール:
