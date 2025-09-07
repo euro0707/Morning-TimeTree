@@ -1,0 +1,13 @@
+# Secrets / local config
+.env
+.env.*
+!.env.example
+
+# Generated files
+*.ics
+calendar.ics
+
+# Python
+__pycache__/
+.venv/
+*.pyc
