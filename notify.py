@@ -184,6 +184,22 @@ def send_line_messaging(channel_access_token: str, to_user_id: str, message: str
     }
     resp = requests.post(LINE_MESSAGING_PUSH_ENDPOINT, headers=headers, json=payload, timeout=10)
     if resp.status_code >= 400:
+        # Try to include error details from LINE response for troubleshooting
+        detail = None
+        try:
+            j = resp.json()
+            # Typical LINE error schema: {"message": str, "details": [{"message": str, ...}]}
+            base_msg = j.get("message") if isinstance(j, dict) else None
+            d0 = None
+            if isinstance(j, dict) and isinstance(j.get("details"), list) and j["details"]:
+                d0 = j["details"][0].get("message")
+            parts = [p for p in [base_msg, d0] if p]
+            if parts:
+                detail = "; ".join(parts)
+        except Exception:
+            detail = None
+        if detail:
+            raise SystemExit(f"LINE Messaging API error: HTTP {resp.status_code}: {detail}")
         raise SystemExit(f"LINE Messaging API error: HTTP {resp.status_code}")
 
 
@@ -247,8 +263,11 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         uid = args.line_user_id or os.getenv("LINE_USER_ID")
         if not cat or not uid:
             raise SystemExit("Messaging API を使うには LINE_CHANNEL_ACCESS_TOKEN と LINE_USER_ID が必要です。")
+        # Quick sanity check for userId format
+        if not uid.startswith("U"):
+            raise SystemExit("LINE_USER_ID はユーザーID（先頭'U'）を指定してください。グループ/ルームIDは使用できません。")
         send_line_messaging(cat, uid, message)
-    return 0
+        return 0
 
 
 if __name__ == "__main__":
