@@ -47,21 +47,34 @@ jobs:
           TIMETREE_CALENDAR_CODE: ${{ secrets.TIMETREE_CALENDAR_CODE }}
         run: |
           set -euo pipefail
-          # 例: 一般的な使い方の想定。必要に応じて --help を参照して引数を調整してください。
+          # 本環境の timetree_exporter は --password 非対応のため、環境変数/標準入力で対応
+          # 1) CLI 名が存在する場合（timetree-exporter）
           if command -v timetree-exporter >/dev/null 2>&1; then
+            # 環境変数にパスワードを置いた状態で実行
             timetree-exporter \
-              --email "$TIMETREE_EMAIL" \
-              --password "$TIMETREE_PASSWORD" \
-              --calendar "$TIMETREE_CALENDAR_CODE" \
-              --output calendar.ics || true
+              -e "$TIMETREE_EMAIL" \
+              -c "$TIMETREE_CALENDAR_CODE" \
+              -o calendar.ics || true
+            # 生成されない場合はパスワードを標準入力で供給して試行（対話プロンプト対策）
+            if [ ! -f calendar.ics ] && [ -n "${TIMETREE_PASSWORD:-}" ]; then
+              printf '%s\n' "$TIMETREE_PASSWORD" | timetree-exporter \
+                -e "$TIMETREE_EMAIL" \
+                -c "$TIMETREE_CALENDAR_CODE" \
+                -o calendar.ics || true
+            fi
           fi
-          # Fallback: module 実行（配布形態によってはCLI名が異なる場合がある）
+          # 2) module 実行（配布形態によりエントリーポイント名が異なるため）
           if [ ! -f calendar.ics ]; then
             python -m timetree_exporter \
-              --email "$TIMETREE_EMAIL" \
-              --password "$TIMETREE_PASSWORD" \
-              --calendar "$TIMETREE_CALENDAR_CODE" \
-              --output calendar.ics || true
+              -e "$TIMETREE_EMAIL" \
+              -c "$TIMETREE_CALENDAR_CODE" \
+              -o calendar.ics || true
+          fi
+          if [ ! -f calendar.ics ] && [ -n "${TIMETREE_PASSWORD:-}" ]; then
+            printf '%s\n' "$TIMETREE_PASSWORD" | python -m timetree_exporter \
+              -e "$TIMETREE_EMAIL" \
+              -c "$TIMETREE_CALENDAR_CODE" \
+              -o calendar.ics || true
           fi
           if [ ! -f calendar.ics ]; then
             echo "calendar.ics が生成されませんでした。timetree-exporter のインストール/引数をご確認ください。" >&2
