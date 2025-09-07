@@ -1,45 +1,49 @@
 # Morning TimeTree
 
-毎朝 06:00 JST に TimeTree の当日予定を通知します。初期は LINE Notify を想定しつつ、LINE Messaging API にも対応しています。
+毎朝 06:00 JST に TimeTree の当日予定を通知します。通知方式は LINE Messaging API を推奨・既定とし、互換のために LINE Notify にも対応しています（非推奨）。
+
+重要: LINE Notify はサービス終了済みのため、基本的に LINE Messaging API を利用してください。参考: https://blog.socialplus.jp/knowledge/solution-to-replace-line-notify/
 
 ## セットアップ
 
-1) Secrets を設定（GitHub リポジトリ Settings → Secrets and variables → Actions）
-- `TIMETREE_EMAIL`: TimeTree ログインメール
-- `TIMETREE_PASSWORD`: TimeTree パスワード
-- `TIMETREE_CALENDAR_CODE`: カレンダーURL末尾の英数字
-- 通知方式（どちらか）
-  - LINE Notify を使う場合: `LINE_TOKEN`
-  - LINE Messaging API を使う場合: `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_USER_ID`
+1) GitHub Secrets を設定（Settings → Secrets and variables → Actions）
+- TimeTree 認証:
+  - `TIMETREE_EMAIL`: TimeTree ログインメール
+  - `TIMETREE_PASSWORD`: TimeTree パスワード
+  - `TIMETREE_CALENDAR_CODE`: カレンダーURL末尾の英数字
+- 通知方式（推奨: Messaging API）
+  - 推奨: `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_USER_ID`（両方あれば自動的に Messaging API を使用）
+  - 互換/非推奨: `LINE_TOKEN`（LINE Notify 個人トークン。サービス終了のため基本は使用しない）
 
-2) 内容確認（任意）
-- ローカルに Python 3.12+ があれば、以下で整形結果のみ確認できます。
-  ```bash
-  pip install -r requirements.txt
-  python notify.py --ics sample.ics --date 2025-09-07 --dry-run
-  ```
+2) 内容確認（任意・ローカル）
+- Python 3.12+ を用意し、依存をインストール:
+  - `pip install -r requirements.txt`
+- `.env` を用意すると `python-dotenv` で自動読込されます（コミット禁止。`.env.example` 参照）。
+- 整形のみ確認（送信なし）:
+  - `python notify.py --ics sample.ics --date 2025-09-07 --dry-run`
+- Messaging API で実送信テスト（ローカル）:
+  - `python notify.py --ics sample.ics --date 2025-09-07 --line-mode messaging --line-channel-access-token "<token>" --line-user-id "<userId>"`
 
 3) GitHub Actions を実行
-- 手動: Actions → "Morning TimeTree" → Run workflow（必要なら `date` 入力に `YYYY-MM-DD`）
+- 手動: Actions → "Morning TimeTree" → Run workflow（`date` は任意の `YYYY-MM-DD`）
 - 定期: 毎日 06:00 JST（`cron: 0 21 * * *`）に自動通知
-  - Secrets に `LINE_CHANNEL_ACCESS_TOKEN` と `LINE_USER_ID` が両方設定されていれば Messaging API を優先します
+- Secrets に `LINE_CHANNEL_ACCESS_TOKEN` と `LINE_USER_ID` が両方あれば Messaging API を優先使用します
 
 ## 実装の要点
 - タイムゾーン: `zoneinfo` で JST に正規化
-- 当日抽出: `[今日00:00, 翌日00:00)`（排他的終端）。終日/跨ぎイベントに対応
+- 当日抽出: `[今日00:00, 翌日00:00)`（排他的終端）。終日・跨ぎイベントに対応
 - 表示: 終日 → 時間順。場所はあれば `＠場所`。予定なしは `🟢 予定はありません`
-- 文字数: 1000 文字上限で切り詰め（`…ほかN件`）
-- 安全性: Secrets のみ使用。ジョブ権限は `contents: read` 最小権限。ICSは後片付けで削除
+- 文字数: 1000 文字上限で切り詰め（Notify基準）。Messaging API はより長文可ですが本実装では同じ整形を適用
+- 安全性: Secrets のみ使用。ジョブ権限は `contents: read` 最小権限。生成した `calendar.ics` は後片付けで削除
+- ローカル: `python-dotenv` により `.env` を自動読込（既存の環境変数は上書きしません）
 
 ## トラブルシュート
 - `calendar.ics が生成されませんでした`:
   - `timetree-exporter` の CLI 名や引数が環境で異なる場合があります。ワークフローの Export ステップを実環境の `--help` に合わせて調整してください。
 - 日本語や絵文字が文字化けする:
   - ローカル実行時は `-X utf8` を付けるか、`PYTHONUTF8=1` を設定してください。
-- LINE Notify が使えない/終了している:
-  - `LINE_CHANNEL_ACCESS_TOKEN` と `LINE_USER_ID` を設定すると Messaging API で送信します。
 - 通知が来ない:
-  - Actions 実行ログを確認。Secrets やスケジュールの有効性、権限設定を点検
+  - Actions 実行ログで各ステップ（Export/Send）を確認。Secrets やスケジュールの有効性、Bot の友だち追加/プッシュ有効化を点検
 
 ## 参考
-- 仕様とセキュリティの詳細は `DESIGN.md` / `SECURITY.md` を参照
+- 設計/セキュリティ: `DESIGN.md` / `SECURITY.md`
