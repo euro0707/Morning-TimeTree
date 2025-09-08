@@ -260,12 +260,12 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     else:
         # messaging
         cat = args.line_channel_access_token or os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-        uid = args.line_user_id or os.getenv("LINE_USER_ID")
-        if not cat or not uid:
+        uid_raw = args.line_user_id or os.getenv("LINE_USER_ID")
+        if not cat or not uid_raw:
             raise SystemExit("Messaging API を使うには LINE_CHANNEL_ACCESS_TOKEN と LINE_USER_ID が必要です。")
-        # Quick sanity check for userId format
-        if not uid.startswith("U"):
-            raise SystemExit("LINE_USER_ID はユーザーID（先頭'U'）を指定してください。グループ/ルームIDは使用できません。")
+        # Normalize LINE_USER_ID: strip whitespace and surrounding quotes
+        uid = uid_raw.strip().strip('"').strip("'")
+        # Do not hard-block by prefix; let LINE API validate and we display details on error
         send_line_messaging(cat, uid, message)
         return 0
 
