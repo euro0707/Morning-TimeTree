@@ -1,5 +1,8 @@
 # Morning TimeTree
 
+![workflow](https://github.com/euro0707/Morning-TimeTree/actions/workflows/notify.yml/badge.svg?branch=main)
+![license](https://img.shields.io/badge/license-MIT-green)
+
 毎朝 06:00 JST に TimeTree の当日予定を通知します。通知方式は LINE Messaging API を推奨・既定とし、互換のために LINE Notify にも対応しています（非推奨）。
 
 重要: LINE Notify はサービス終了済みのため、基本的に LINE Messaging API を利用してください。参考: https://blog.socialplus.jp/knowledge/solution-to-replace-line-notify/
