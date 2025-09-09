@@ -89,6 +89,10 @@ def parse_ics(ics_bytes: bytes) -> List[NormalizedEvent]:
             else:
                 end = _ensure_aware_jst(dtend_raw)
 
+        # Robustness: some producers incorrectly set all-day DTEND == DTSTART (non-exclusive)
+        if is_all_day and end <= start:
+            end = start + timedelta(days=1)
+
         title = str(comp.get("SUMMARY") or "(無題)")
         loc = comp.get("LOCATION")
         location = str(loc) if loc else None
