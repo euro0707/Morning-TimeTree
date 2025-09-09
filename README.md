@@ -22,19 +22,18 @@
   - `pip install -r requirements.txt`
 - `.env` を用意すると `python-dotenv` で自動読込されます（コミット禁止。`.env.example` 参照）。
 - 整形のみ確認（送信なし）:
-  - `python src/notify.py --ics examples/sample.ics --date 2025-09-07 --dry-run`
+  - `python src/notify.py --ics <path/to/your.ics> --date 2025-09-07 --dry-run`
 - Messaging API で実送信テスト（ローカル）:
-  - `python src/notify.py --ics examples/sample.ics --date 2025-09-07 --line-mode messaging --line-channel-access-token "<token>" --line-user-id "<userId>"`
+  - `python src/notify.py --ics <path/to/your.ics> --date 2025-09-07 --line-mode messaging --line-channel-access-token "<token>" --line-user-id "<userId>"`
 
 ## 構成（整理後）
 ```
 .
 ├─ .github/workflows/notify.yml
 ├─ src/notify.py
-├─ docs/
-│  ├─ DESIGN.md
-│  └─ SECURITY.md
-├─ examples/sample.ics
+├─ SECURITY.md
+├─ docs/ (削除済み)
+├─ examples/ (削除済み)
 ├─ requirements.txt
 ├─ README.md
 ├─ .env.example
