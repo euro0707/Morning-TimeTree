@@ -11,3 +11,5 @@ calendar.ics
 __pycache__/
 .venv/
 *.pyc
+logs/
+*.log
