@@ -76,8 +76,12 @@ def parse_ics(ics_bytes: bytes) -> List[NormalizedEvent]:
 
         # DTEND normalize
         if dtend_raw is None:
-            # if missing, use DTSTART as DTEND (zero-duration)
-            end = start
+            # If all-day and DTEND missing, treat as one-day all-day: [start, next day 00:00)
+            if is_all_day:
+                end = start + timedelta(days=1)
+            else:
+                # if missing, use DTSTART as DTEND (zero-duration)
+                end = start
         else:
             if is_all_day and isinstance(dtend_raw, date) and not isinstance(dtend_raw, datetime):
                 # All-day DTEND in ICS is exclusive; convert to next day 00:00 JST
