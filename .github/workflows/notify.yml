@@ -103,7 +103,7 @@ jobs:
           if [ -n "${LINE_CHANNEL_ACCESS_TOKEN:-}" ] && [ -n "${LINE_USER_ID:-}" ]; then
             EXTRA="--line-mode messaging --line-channel-access-token \"$LINE_CHANNEL_ACCESS_TOKEN\" --line-user-id \"$LINE_USER_ID\""
           fi
-          python notify.py --ics calendar.ics $DATE_OPT $EXTRA
+          python src/notify.py --ics calendar.ics $DATE_OPT $EXTRA
 
       - name: Cleanup ICS
         if: always()
