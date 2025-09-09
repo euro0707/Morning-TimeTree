@@ -5,6 +5,8 @@ on:
     # 21:00 UTC = 06:00 JST
     - cron: "0 21 * * *"
   workflow_dispatch:
+    # 手動実行は main ブランチに限定
+    branches: [ main ]
     inputs:
       date:
         description: "任意の日付 (YYYY-MM-DD, JST)"
@@ -48,33 +50,33 @@ jobs:
           TIMETREE_CALENDAR_NUMBER: ${{ secrets.TIMETREE_CALENDAR_NUMBER }}
         run: |
           set -euo pipefail
+          # Mask sensitive values just in case anything prints
+          echo "::add-mask::${TIMETREE_EMAIL}"
+          echo "::add-mask::${TIMETREE_PASSWORD}"
+          echo "::add-mask::${TIMETREE_CALENDAR_CODE}"
+
           # timetree_exporter はカレンダー選択を対話で求める場合があるため、
           # まずコード指定で試行し、未生成なら番号選択（標準入力）でフォールバックします。
-          # 1) CLI 名が存在する場合（timetree-exporter）
-          if command -v timetree-exporter >/dev/null 2>&1; then
-            timetree-exporter \
-              -e "$TIMETREE_EMAIL" \
-              -c "$TIMETREE_CALENDAR_CODE" \
-              -o calendar.ics || true
-            # 生成されない場合はカレンダー番号（1,2,...)を標準入力で供給して試行
-            if [ ! -f calendar.ics ] && [ -n "${TIMETREE_CALENDAR_NUMBER:-}" ]; then
-              printf '%s\n' "$TIMETREE_CALENDAR_NUMBER" | timetree-exporter \
-                -e "$TIMETREE_EMAIL" \
-                -o calendar.ics || true
+          # リトライ込みで最大2回ずつ試行
+          for attempt in 1 2; do
+            # 1) CLI 名が存在する場合（timetree-exporter）
+            if command -v timetree-exporter >/dev/null 2>&1; then
+              timetree-exporter -e "$TIMETREE_EMAIL" -c "$TIMETREE_CALENDAR_CODE" -o calendar.ics || true
+              if [ -f calendar.ics ]; then break; fi
+              if [ -n "${TIMETREE_CALENDAR_NUMBER:-}" ]; then
+                printf '%s\n' "$TIMETREE_CALENDAR_NUMBER" | timetree-exporter -e "$TIMETREE_EMAIL" -o calendar.ics || true
+                if [ -f calendar.ics ]; then break; fi
+              fi
             fi
-          fi
-          # 2) module 実行（配布形態によりエントリーポイント名が異なるため）
-          if [ ! -f calendar.ics ]; then
-            python -m timetree_exporter \
-              -e "$TIMETREE_EMAIL" \
-              -c "$TIMETREE_CALENDAR_CODE" \
-              -o calendar.ics || true
-          fi
-          if [ ! -f calendar.ics ] && [ -n "${TIMETREE_CALENDAR_NUMBER:-}" ]; then
-            printf '%s\n' "$TIMETREE_CALENDAR_NUMBER" | python -m timetree_exporter \
-              -e "$TIMETREE_EMAIL" \
-              -o calendar.ics || true
-          fi
+            # 2) module 実行（配布形態によりエントリーポイント名が異なるため）
+            python -m timetree_exporter -e "$TIMETREE_EMAIL" -c "$TIMETREE_CALENDAR_CODE" -o calendar.ics || true
+            if [ -f calendar.ics ]; then break; fi
+            if [ -n "${TIMETREE_CALENDAR_NUMBER:-}" ]; then
+              printf '%s\n' "$TIMETREE_CALENDAR_NUMBER" | python -m timetree_exporter -e "$TIMETREE_EMAIL" -o calendar.ics || true
+              if [ -f calendar.ics ]; then break; fi
+            fi
+            sleep 3
+          done
           if [ ! -f calendar.ics ]; then
             echo "calendar.ics が生成されませんでした。timetree-exporter のインストール/引数をご確認ください。" >&2
             exit 1
@@ -88,6 +90,10 @@ jobs:
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
         run: |
           set -euo pipefail
+          # Mask LINE-related sensitive values
+          if [ -n "${LINE_TOKEN:-}" ]; then echo "::add-mask::${LINE_TOKEN}"; fi
+          if [ -n "${LINE_CHANNEL_ACCESS_TOKEN:-}" ]; then echo "::add-mask::${LINE_CHANNEL_ACCESS_TOKEN}"; fi
+          if [ -n "${LINE_USER_ID:-}" ]; then echo "::add-mask::${LINE_USER_ID}"; fi
           DATE_OPT=""
           if [ -n "${{ github.event.inputs.date }}" ]; then
             DATE_OPT="--date ${{ github.event.inputs.date }}"
