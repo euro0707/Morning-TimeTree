@@ -2,10 +2,11 @@ name: Morning TimeTree
 
 on:
   schedule:
-    # TEMP: test every 5 minutes (UTC)
-    - cron: "*/5 * * * *"
+    # 21:00 UTC = 06:00 JST
+    - cron: "0 21 * * *"
   workflow_dispatch:
-    branches: [ main ]  # 手動実行。main ブランチに限定
+    # 手動実行は main ブランチに限定
+    branches: [ main ]
     inputs:
       date:
         description: "任意の日付 (YYYY-MM-DD, JST)"
@@ -22,6 +23,7 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: production
     env:
       TZ: Asia/Tokyo
     steps:
@@ -39,8 +41,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Export TimeTree ICS
-        # 注意: timetree-exporter の CLI 引数はバージョンにより異なる場合があります。
-        # 必要に応じてこのコマンドを --help を参考に調整してください。
+        # timetree-exporter のCLI引数はバージョンにより異なる可能性があります。
+        # 必要に応じてこのコマンドを調整してください。
         shell: bash
         env:
           TIMETREE_EMAIL: ${{ secrets.TIMETREE_EMAIL }}
@@ -58,7 +60,7 @@ jobs:
           # まずコード指定で試行し、未生成なら番号選択（標準入力）でフォールバックします。
           # リトライ込みで最大2回ずつ試行
           for attempt in 1 2; do
-            # 1) CLI 名が存在する場合はそのまま実行
+            # 1) CLI 名が存在する場合（timetree-exporter）
             if command -v timetree-exporter >/dev/null 2>&1; then
               timetree-exporter -e "$TIMETREE_EMAIL" -c "$TIMETREE_CALENDAR_CODE" -o calendar.ics > /dev/null || true
               if [ -f calendar.ics ]; then break; fi
@@ -87,8 +89,6 @@ jobs:
           LINE_TOKEN: ${{ secrets.LINE_TOKEN }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-          # 通知文の末尾に添える一言（任意）
-          MESSAGE_NOTE: 今日も良い一日を！
         run: |
           set -euo pipefail
           # Mask LINE-related sensitive values
