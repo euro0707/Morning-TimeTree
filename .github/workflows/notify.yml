@@ -3,7 +3,7 @@ name: Morning TimeTree
 on:
   schedule:
     # TEMP: test every 5 minutes (UTC)
-    - cron: "*/* * * * *"
+    - cron: "* * * * *"
   workflow_dispatch:
     branches: [ main ]  # 手動実行。main ブランチに限定
     inputs:
