@@ -1,15 +1,14 @@
 name: Morning TimeTree
 
-on:
-  schedule:
-    # TEMP: test every 5 minutes (UTC)
-    - cron: "* * * * *"
-  workflow_dispatch:
-    branches: [ main ]  # 手動実行。main ブランチに限定
-    inputs:
-      date:
-        description: "任意の日付 (YYYY-MM-DD, JST)"
-        required: false
+on:                                                                        
+    schedule:                                                                
+      - cron: "* * * * *"  # TEMP: every minute (UTC)                        
+    workflow_dispatch:                                                       
+      branches: [ main ]  # 手動実行。main ブランチに限定                    
+      inputs:                                                                
+        date:                                                                
+          description: "任意の日付 (YYYY-MM-DD, JST)"                        
+          required: false       
 
 permissions:
   contents: read
