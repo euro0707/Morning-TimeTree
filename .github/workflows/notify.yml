@@ -2,8 +2,8 @@ name: Morning TimeTree
 
 on:
   schedule:
-    # TEMP: test every 5 minutes (UTC)
-    - cron: "*/* * * * *"
+    # JST 06:00 daily (UTC 21:00 previous day)
+    - cron: "0 21 * * *"
   workflow_dispatch:
     branches: [ main ]  # 手動実行。main ブランチに限定
     inputs:
