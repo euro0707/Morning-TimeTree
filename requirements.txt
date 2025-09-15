@@ -1,7 +1,7 @@
 icalendar==6.3.1
 requests==2.32.5
 tzdata==2025.2
-python-dotenv==1.0.1
+python-dotenv==1.1.1
 # timetree-exporter の PyPI パッケージ（CLI を提供）
 # CLI引数の差異があるため、当面はピン留めしません（挙動が安定したら固定検討）
 timetree-exporter
